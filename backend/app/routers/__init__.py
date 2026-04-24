@@ -1,4 +1,4 @@
-from app.routers import (
+from routers import (
     students,
     enrollments,
     grades,

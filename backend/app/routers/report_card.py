@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.services.report_card_service import get_report_card
+from database import get_db
+from services.report_card_service import get_report_card
 
 router = APIRouter(prefix="/report-card", tags=["Report Card"])
 

@@ -1,66 +1,52 @@
 import { useState } from "react";
-import { calculateQuarterGrade } from "../api";
-import FeedbackMessage from "./FeedbackMessage";
+import { calculateQuarterGrade } from "../api.js";
 
 export default function QuarterPreview({ context }) {
-    const [result, setResult] = useState(null);
-    const [feedback, setFeedback] = useState(null);
-    const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState(null);
 
-    const isClosed = context.quarter.status === "CLOSED";
+  async function handleCalculate() {
+    setLoading(true);
+    setMsg(null);
 
-    async function handleCalculate() {
-        if (isClosed) {
-            setFeedback({
-                type: "warning",
-                message: "El Quarter está cerrado. No se puede recalcular.",
-            });
-            return;
-        }
+    try {
+      const data = await calculateQuarterGrade({
+        student_id: 1, // ✅ temporal (luego lo hacemos por estudiante)
+        subject_id: context.subject.id,
+        grade_id: context.grade.id,
+        quarter_id: context.quarter.id,
+      });
 
-        setLoading(true);
-        setFeedback(null);
-
-        try {
-            const res = await calculateQuarterGrade({
-                student_id: 1,
-                subject_id: context.subject.id,
-                grade_id: context.grade.id,
-                quarter_id: context.quarter.id,
-                teacher_id: 1,
-                academic_year: context.academicYear,
-            });
-
-            setResult(res);
-            setFeedback({
-                type: "success",
-                message: "✅ Quarter calculado correctamente.",
-            });
-        } catch {
-            setFeedback({
-                type: "error",
-                message: "❌ No se pudo calcular el Quarter.",
-            });
-        } finally {
-            setLoading(false);
-        }
+      setResult(data);
+    } catch (e) {
+      setMsg({ type: "error", text: e.message });
+    } finally {
+      setLoading(false);
     }
+  }
 
-    return (
-        <div style={{ marginTop: "2rem" }}>
-            <h2>Vista previa del Quarter</h2>
+  return (
+    <div className="card">
+      <h2>Vista previa del Quarter</h2>
 
-            <button disabled={isClosed || loading} onClick={handleCalculate}>
-                {loading ? "Calculando..." : "Calcular Quarter"}
-            </button>
+      <p>
+        <strong>Quarter:</strong> {context.quarter.code} (
+        {context.quarter.status})
+      </p>
 
-            <FeedbackMessage type={feedback?.type} message={feedback?.message} />
+      <button onClick={handleCalculate} disabled={loading}>
+        {loading ? "Calculando..." : "Calcular nota del Quarter"}
+      </button>
 
-            {result && (
-                <p style={{ marginTop: "1rem" }}>
-                    Nota final del Quarter: <strong>{result.final_score}</strong>
-                </p>
-            )}
+      {msg && <div className={`feedback ${msg.type}`}>{msg.text}</div>}
+
+      {result && (
+        <div className="feedback success" style={{ marginTop: "1rem" }}>
+          ✅ Nota final del Quarter:{" "}
+          <strong>{Number(result.final_score).toFixed(2)}</strong>
         </div>
-    );
+      )}
+    </div>
+  );
 }

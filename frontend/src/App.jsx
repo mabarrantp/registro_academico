@@ -1,23 +1,45 @@
 import { useEffect, useState } from "react";
+
+// Componentes
 import Login from "./components/Login.jsx";
 import ContextSelector from "./components/ContextSelector.jsx";
-import { clearSession, getRole } from "./api.js";
+import QuarterPreview from "./components/QuarterPreview.jsx";
+import AssessmentRegister from "./components/AssessmentRegister.jsx";
+
+// API helpers
+import { getRole, clearSession } from "./api.js";
 
 function App() {
-  const [session, setSession] = useState(null); // { role }
-  const [context, setContext] = useState(null);
+  // ===============================
+  // Estado de sesión y contexto
+  // ===============================
+  const [session, setSession] = useState(null);   // { role }
+  const [context, setContext] = useState(null);   // contexto académico confirmado
 
+  // ===============================
+  // Restaurar sesión si existe token
+  // ===============================
   useEffect(() => {
+    const token = localStorage.getItem("token");
     const role = getRole();
-    if (role) setSession({ role });
+
+    if (typeof token === "string" && token.length > 10 && role) {
+      setSession({ role });
+    }
   }, []);
 
+  // ===============================
+  // Cerrar sesión
+  // ===============================
   function logout() {
     clearSession();
     setSession(null);
     setContext(null);
   }
 
+  // ===============================
+  // SIN sesión → Login
+  // ===============================
   if (!session) {
     return (
       <div className="container">
@@ -27,10 +49,16 @@ function App() {
     );
   }
 
+  // ===============================
+  // CON sesión → Flujo académico
+  // ===============================
   return (
     <div className="container">
       <h1>Sistema Académico</h1>
 
+      {/* =========================
+          Información de sesión
+         ========================= */}
       <div className="card">
         <strong>Sesión:</strong> {session.role}
         <button style={{ marginLeft: "1rem" }} onClick={logout}>
@@ -38,23 +66,37 @@ function App() {
         </button>
       </div>
 
+      {/* =========================
+          Selección de contexto
+         ========================= */}
       {!context ? (
         <ContextSelector onConfirm={setContext} />
       ) : (
-        <div className="card">
-          <h2>Contexto seleccionado</h2>
-          <p>Año: {context.academicYear}</p>
-          <p>Grado: {context.grade.name}</p>
-          <p>Materia: {context.subject.name}</p>
-          <p>
-            Quarter: {context.quarter.code} ({context.quarter.status})
-          </p>
+        <>
+          {/* =========================
+              Resumen del contexto
+             ========================= */}
+          <div className="card">
+            <h2>Contexto confirmado</h2>
+            <p><strong>Año:</strong> {context.academicYear}</p>
+            <p><strong>Grado:</strong> {context.grade.name}</p>
+            <p><strong>Materia:</strong> {context.subject.name}</p>
+            <p>
+              <strong>Quarter:</strong>{" "}
+              {context.quarter.code} ({context.quarter.status})
+            </p>
+          </div>
 
-          <p style={{ opacity: 0.8 }}>
-            ✅ Siguiente paso: aquí conectamos Registro / Preview / ReportCard ya que Vite
-            esté estable.
-          </p>
-        </div>
+          {/* =========================
+              Vista previa del Quarter
+             ========================= */}
+          <QuarterPreview context={context} />
+
+          {/* =========================
+              Registro de actividades
+             ========================= */}
+          <AssessmentRegister context={context} />
+        </>
       )}
     </div>
   );

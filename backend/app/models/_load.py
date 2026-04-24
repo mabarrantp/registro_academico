@@ -1,16 +1,24 @@
-from app.models.subject import Subject
-from app.models.grade import Grade
-from app.models.teacher import Teacher
-from app.models.student import Student
-from app.models.enrollment import Enrollment
+# Importa TODOS los modelos aquí para registrarlos en Base.metadata
+# Orden: primero tablas "base" (subjects, grades, quarters), luego las que dependen de ellas.
 
-from app.models.quarter import Quarter              # ✅ ANTES
-from app.models.assessment_category import AssessmentCategory
+from models.user import User
+from models.audit_log import AuditLog
 
-from app.models.grade_policy import GradePolicy     # ✅ DESPUÉS
-from app.models.assessment import Assessment
-from app.models.quarter_grade import QuarterGrade
-from app.models.final_grade import FinalGrade
+from models.teacher import Teacher
+from models.teacher_role import TeacherRole
+from models.teacher_specialty import TeacherSpecialty
+from models.teacher_assignment import TeacherAssignment
 
-from app.models.user import User
-from app.models.audit_log import AuditLog
+from models.subject import Subject
+from models.grade import Grade
+from models.student import Student
+from models.section import Section   # ✅ NUEVO (poner antes de Enrollment)
+from models.enrollment import Enrollment
+
+from models.quarter import Quarter
+from models.assessment_category import AssessmentCategory
+
+from models.grade_policy import GradePolicy
+from models.assessment import Assessment
+from models.quarter_grade import QuarterGrade
+from models.final_grade import FinalGrade

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from app.models.quarter_grade import QuarterGrade
-from app.models.final_grade import FinalGrade
-from app.models.quarter import Quarter
+from models.quarter_grade import QuarterGrade
+from models.final_grade import FinalGrade
+from models.quarter import Quarter
 
 def calculate_final_grade(
     db: Session,

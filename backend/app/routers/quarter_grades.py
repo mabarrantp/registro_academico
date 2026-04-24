@@ -1,47 +1,128 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.deps import require_roles
-from app.utils.quarter_guard import ensure_quarter_open
-from app.services.quarter_grade_service import calculate_quarter_grade
+from database import get_db
+from models.assessment import Assessment
+from models.grade_policy import GradePolicy
+from models.quarter import Quarter
 
-router = APIRouter(prefix="/quarter-grades", tags=["Quarter Grades"])
+router = APIRouter(
+    prefix="/quarter-grades",
+    tags=["Quarter Grades"]
+)
 
-# ✅ Decisión B: COORDINATION también puede calcular/recalcular
-ALLOWED_ROLES = ("TEACHER", "ADMIN", "COORDINATION")
 
-
-@router.post("/calculate", dependencies=[Depends(require_roles(*ALLOWED_ROLES))])
-def calculate(
+@router.post("/calculate")
+def calculate_quarter_grade(
     student_id: int,
     subject_id: int,
     grade_id: int,
     quarter_id: int,
-    teacher_id: int,
     academic_year: int,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    # ✅ No recalcular si el Quarter está cerrado
-    ensure_quarter_open(db, quarter_id)
-
-    result = calculate_quarter_grade(
-        db=db,
-        student_id=student_id,
-        subject_id=subject_id,
-        grade_id=grade_id,
-        quarter_id=quarter_id,
-        teacher_id=teacher_id,
-        academic_year=academic_year,
+    # =========================================================
+    # 1️⃣ Validar que el quarter exista (solo para las notas)
+    # =========================================================
+    quarter = (
+        db.query(Quarter)
+        .filter(
+            Quarter.id == quarter_id,
+            Quarter.academic_year == academic_year
+        )
+        .first()
     )
 
-    if not result:
+    if not quarter:
+        raise HTTPException(status_code=404, detail="Quarter not found")
+
+    # =========================================================
+    # 2️⃣ Obtener GradePolicy (❗ SIN quarter_id ❗)
+    # =========================================================
+    policy = (
+        db.query(GradePolicy)
+        .filter(
+            GradePolicy.subject_id == subject_id,
+            GradePolicy.grade_id == grade_id,
+            GradePolicy.academic_year == academic_year
+        )
+        .first()
+    )
+
+    if not policy:
         raise HTTPException(status_code=404, detail="GradePolicy not found")
 
+    # =========================================================
+    # 3️⃣ Obtener assessments del estudiante para ese quarter
+    # =========================================================
+    assessments = (
+        db.query(Assessment)
+        .filter(
+            Assessment.student_id == student_id,
+            Assessment.subject_id == subject_id,
+            Assessment.grade_id == grade_id,
+            Assessment.quarter_id == quarter_id,
+            Assessment.status == "ACTIVE"
+        )
+        .all()
+    )
+
+    if not assessments:
+        raise HTTPException(
+            status_code=404,
+            detail="No assessments found for this quarter"
+        )
+
+    # =========================================================
+    # 4️⃣ Agrupar notas por categoría (SIN lazy loading)
+    # =========================================================
+    # category_id → código
+    category_map = {
+        1: "QUIZ",
+        2: "HOMEWORK",
+        3: "CLASSWORK",
+        4: "PROJECT",
+        5: "TEST",
+    }
+
+    categories = {
+        "QUIZ": [],
+        "HOMEWORK": [],
+        "CLASSWORK": [],
+        "PROJECT": [],
+        "TEST": [],
+    }
+
+    for a in assessments:
+        code = category_map.get(a.category_id)
+        if code:
+            categories[code].append(a.score)
+
+    # =========================================================
+    # 5️⃣ Función promedio segura
+    # =========================================================
+    def avg(values):
+        return sum(values) / len(values) if values else 0
+
+    # =========================================================
+    # 6️⃣ Cálculo final (igual que Excel)
+    # =========================================================
+    final_score = (
+        avg(categories["QUIZ"]) * policy.quiz_weight +
+        avg(categories["HOMEWORK"]) * policy.homework_weight +
+        avg(categories["CLASSWORK"]) * policy.classwork_weight +
+        avg(categories["PROJECT"]) * policy.project_weight +
+        avg(categories["TEST"]) * policy.test_weight
+    )
+
+    # =========================================================
+    # 7️⃣ Respuesta
+    # =========================================================
     return {
-        "id": result.id,
-        "student_id": result.student_id,
-        "subject_id": result.subject_id,
-        "quarter_id": result.quarter_id,
-        "final_score": round(float(result.final_score), 2),
+        "student_id": student_id,
+        "subject_id": subject_id,
+        "grade_id": grade_id,
+        "quarter_id": quarter_id,
+        "academic_year": academic_year,
+        "final_score": round(final_score, 2)
     }

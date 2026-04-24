@@ -1,25 +1,30 @@
-from app.database import SessionLocal
-from app.models.quarter import Quarter
+from database import SessionLocal
+from models.quarter import Quarter
 
-db = SessionLocal()
 
-quarters = [
-    Quarter(code="QI", academic_year=2025, status="OPEN"),
-    Quarter(code="QII", academic_year=2025, status="OPEN"),
-    Quarter(code="QIII", academic_year=2025, status="OPEN"),
-    Quarter(code="QIV", academic_year=2025, status="OPEN"),
-]
+def run():
+    db = SessionLocal()
 
-for q in quarters:
-    exists = (
-        db.query(Quarter)
-        .filter(Quarter.code == q.code, Quarter.academic_year == q.academic_year)
-        .first()
-    )
-    if not exists:
-        db.add(q)
+    academic_year = 2025
 
-db.commit()
-db.close()
+    if db.query(Quarter).filter(Quarter.academic_year == academic_year).first():
+        print(f"Quarters already seeded for {academic_year}")
+        db.close()
+        return
 
-print("✅ Quarters seeded")
+    quarters = [
+        Quarter(code="QI", academic_year=academic_year, status="OPEN"),
+        Quarter(code="QII", academic_year=academic_year, status="OPEN"),
+        Quarter(code="QIII", academic_year=academic_year, status="OPEN"),
+        Quarter(code="QIV", academic_year=academic_year, status="OPEN"),
+    ]
+
+    db.add_all(quarters)
+    db.commit()
+    db.close()
+
+    print(f"✅ Quarters seeded for academic year {academic_year}")
+
+
+if __name__ == "__main__":
+    run()

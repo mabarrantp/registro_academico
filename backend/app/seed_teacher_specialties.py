@@ -1,19 +1,27 @@
-from app.database import SessionLocal
-from app.models.teacher import Teacher
-from app.models.subject import Subject
-from app.models.teacher_specialty import TeacherSpecialty
+from database import SessionLocal
+from models.teacher import Teacher
+from models.subject import Subject
+from models.teacher_specialty import TeacherSpecialty
 
-db = SessionLocal()
 
-def link(teacher_name, subject_names):
-    teacher = (
-        db.query(Teacher)
-        .filter(Teacher.first_name == teacher_name)
-        .first()
-    )
-    for name in subject_names:
-        subject = db.query(Subject).filter(Subject.name == name).first()
-        if teacher and subject:
+def run():
+    db = SessionLocal()
+
+    def link(teacher_name, subject_names):
+        teacher = (
+            db.query(Teacher)
+            .filter(Teacher.first_name == teacher_name)
+            .first()
+        )
+
+        if not teacher:
+            return
+
+        for name in subject_names:
+            subject = db.query(Subject).filter(Subject.name == name).first()
+            if not subject:
+                continue
+
             exists = (
                 db.query(TeacherSpecialty)
                 .filter(
@@ -22,6 +30,7 @@ def link(teacher_name, subject_names):
                 )
                 .first()
             )
+
             if not exists:
                 db.add(
                     TeacherSpecialty(
@@ -30,15 +39,19 @@ def link(teacher_name, subject_names):
                     )
                 )
 
-# === ESPECIALIDADES ===
-link("Rosa", ["Math", "Physics"])
-link("Edwin", ["Biology", "Chemistry", "Science"])
-link("María", ["Math", "Lengua y Literatura"])
-link("Marcos", ["Computer"])
-link("Fatima", ["Spanish"])
-link("Ana", ["Language Arts", "ESL"])
+    # === ESPECIALIDADES ===
+    link("Rosa", ["Math", "Physics"])
+    link("Edwin", ["Biology", "Chemistry", "Science"])
+    link("María", ["Math", "Lengua y Literatura"])
+    link("Marcos", ["Computer"])
+    link("Fatima", ["Spanish"])
+    link("Ana", ["Language Arts", "ESL"])
 
-db.commit()
-db.close()
+    db.commit()
+    db.close()
 
-print("✅ TeacherSpecialty cargadas")
+    print("✅ TeacherSpecialty cargadas")
+
+
+if __name__ == "__main__":
+    run()

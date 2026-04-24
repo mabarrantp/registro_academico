@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Float, ForeignKey
-from app.database import Base
+from database import Base
 
 class FinalGrade(Base):
     __tablename__ = "final_grades"

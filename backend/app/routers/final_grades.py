@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.services.final_grade_service import calculate_final_grade
+from database import get_db
+from services.final_grade_service import calculate_final_grade
 
 router = APIRouter(prefix="/final-grades", tags=["Final Grades"])
 

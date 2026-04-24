@@ -1,26 +1,39 @@
-from app.database import SessionLocal
-from app.models.assessment_category import AssessmentCategory
+from database import SessionLocal
+from models.assessment_category import AssessmentCategory
 
-db = SessionLocal()
 
-categories = [
-    AssessmentCategory(code="QUIZ"),
-    AssessmentCategory(code="HOMEWORK"),
-    AssessmentCategory(code="CLASSWORK"),
-    AssessmentCategory(code="PROJECT"),
-    AssessmentCategory(code="TEST"),
-]
+def run():
+    db = SessionLocal()
 
-for c in categories:
-    exists = (
-        db.query(AssessmentCategory)
-        .filter(AssessmentCategory.code == c.code)
-        .first()
-    )
-    if not exists:
-        db.add(c)
+    categories = [
+        AssessmentCategory(code="QUIZ"),
+        AssessmentCategory(code="HOMEWORK"),
+        AssessmentCategory(code="CLASSWORK"),
+        AssessmentCategory(code="PROJECT"),
+        AssessmentCategory(code="TEST"),
+    ]
 
-db.commit()
-db.close()
+    created = 0
+    skipped = 0
 
-print("✅ AssessmentCategories cargadas")
+    for c in categories:
+        exists = (
+            db.query(AssessmentCategory)
+            .filter(AssessmentCategory.code == c.code)
+            .first()
+        )
+
+        if exists:
+            skipped += 1
+        else:
+            db.add(c)
+            created += 1
+
+    db.commit()
+    db.close()
+
+    print(f"✅ AssessmentCategories cargadas | created={created} skipped={skipped}")
+
+
+if __name__ == "__main__":
+    run()

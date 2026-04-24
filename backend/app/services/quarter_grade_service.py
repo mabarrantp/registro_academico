@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
-from app.models.assessment import Assessment
-from app.models.assessment_category import AssessmentCategory
-from app.models.grade_policy import GradePolicy
-from app.models.quarter_grade import QuarterGrade
-from app.services.audit_service import log_event
+from models.assessment import Assessment
+from models.assessment_category import AssessmentCategory
+from models.grade_policy import GradePolicy
+from models.quarter_grade import QuarterGrade
+from services.audit_service import log_event
 
 
 def calculate_quarter_grade(

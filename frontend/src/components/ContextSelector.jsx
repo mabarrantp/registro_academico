@@ -46,10 +46,10 @@ export default function ContextSelector({ onConfirm }) {
   }
 
   return (
-    <div>
+    <div className="card">
       <h2>Seleccionar contexto</h2>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <div className="feedback error">{error}</div>}
 
       <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
         <option value="">Grado</option>

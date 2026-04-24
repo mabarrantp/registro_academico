@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from app.models.quarter import Quarter
-from app.models.quarter_grade import QuarterGrade
-from app.models.final_grade import FinalGrade
+from models.quarter import Quarter
+from models.quarter_grade import QuarterGrade
+from models.final_grade import FinalGrade
 
 def get_report_card(db: Session, student_id: int, subject_id: int, academic_year: int):
     quarters = (

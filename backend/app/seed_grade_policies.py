@@ -1,55 +1,53 @@
-from sqlalchemy.exc import IntegrityError
-from app.database import SessionLocal
-from app.models import _load  # noqa: F401
+from database import SessionLocal
+from models.grade_policy import GradePolicy
+from models.subject import Subject
+from models.grade import Grade
 
-from app.models.grade_policy import GradePolicy
+def run():
+    db = SessionLocal()
+    ACADEMIC_YEAR = 2025
 
-db = SessionLocal()
+    POLICIES = [
+        ("Language Arts", "10°", 0.20, 0.20, 0.20, 0.20, 0.20),
+        ("Math",          "10°", 0.15, 0.15, 0.20, 0.10, 0.40),
+    ]
 
-teacher_id = 1
-subject_id = 1
-grade_id = 2
-quarter_id = 2
-academic_year = 2025
+    created = skipped = missing = 0
 
-# Pesos (deben sumar 1.0)
-quiz = 0.20
-homework = 0.20
-classwork = 0.20
-project = 0.20
-test = 0.20
+    for subj_name, grade_name, qw, hw, cw, pw, tw in POLICIES:
+        subject = db.query(Subject).filter(Subject.name == subj_name).first()
+        grade = db.query(Grade).filter(Grade.name == grade_name).first()
 
-exists = db.query(GradePolicy).filter(
-    GradePolicy.teacher_id == teacher_id,
-    GradePolicy.subject_id == subject_id,
-    GradePolicy.grade_id == grade_id,
-    GradePolicy.quarter_id == quarter_id,
-    GradePolicy.academic_year == academic_year,
-).first()
+        if not subject or not grade:
+            missing += 1
+            continue
 
-if exists:
-    print("ℹ️ GradePolicy ya existe (no se insertó).")
-    db.close()
-    raise SystemExit
+        exists = db.query(GradePolicy).filter(
+            GradePolicy.subject_id == subject.id,
+            GradePolicy.grade_id == grade.id,
+            GradePolicy.academic_year == ACADEMIC_YEAR
+        ).first()
 
-db.add(GradePolicy(
-    teacher_id=teacher_id,
-    subject_id=subject_id,
-    grade_id=grade_id,
-    quarter_id=quarter_id,
-    academic_year=academic_year,
-    quiz_weight=quiz,
-    homework_weight=homework,
-    classwork_weight=classwork,
-    project_weight=project,
-    test_weight=test,
-))
+        if exists:
+            skipped += 1
+        else:
+            db.add(
+                GradePolicy(
+                    subject_id=subject.id,
+                    grade_id=grade.id,
+                    academic_year=ACADEMIC_YEAR,
+                    quiz_weight=qw,
+                    homework_weight=hw,
+                    classwork_weight=cw,
+                    project_weight=pw,
+                    test_weight=tw,
+                )
+            )
+            created += 1
 
-try:
     db.commit()
-    print("✅ GradePolicy insertada correctamente.")
-except IntegrityError as e:
-    db.rollback()
-    print(f"❌ Error insertando GradePolicy: {e.orig}")
-finally:
     db.close()
+    print(f"✅ GradePolicies seeded | created={created} skipped={skipped} missing={missing}")
+
+if __name__ == "__main__":
+    run()

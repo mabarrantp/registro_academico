@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, Float, ForeignKey, UniqueConstraint
-from app.database import Base
+from database import Base
 
 class QuarterGrade(Base):
     __tablename__ = "quarter_grades"

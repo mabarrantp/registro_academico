@@ -5,26 +5,25 @@ export default function Login({ onLoggedIn }) {
   const [username, setUsername] = useState("teacher1");
   const [password, setPassword] = useState("1234");
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
+  const [error, setError] = useState(null);
 
   async function handleLogin() {
     setLoading(true);
-    setMsg(null);
+    setError(null);
 
     try {
       const res = await login(username, password);
-      setSession({ token: res.access_token, role: res.role });
-      setMsg({ type: "success", text: "✅ Login correcto" });
+      setSession(res.access_token, res.role);
       onLoggedIn({ role: res.role });
     } catch (e) {
-      setMsg({ type: "error", text: `❌ ${e.message}` });
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="card" style={{ maxWidth: 420, margin: "0 auto" }}>
+    <div className="card">
       <h2>Iniciar sesión</h2>
 
       <label>Usuario</label>
@@ -38,14 +37,10 @@ export default function Login({ onLoggedIn }) {
       />
 
       <button onClick={handleLogin} disabled={loading}>
-        {loading ? "Ingresando..." : "Entrar"}
+        {loading ? "Entrando..." : "Entrar"}
       </button>
 
-      {msg && (
-        <div className={`feedback ${msg.type}`} style={{ marginTop: "1rem" }}>
-          {msg.text}
-        </div>
-      )}
+      {error && <div className="feedback error">❌ {error}</div>}
     </div>
   );
 }

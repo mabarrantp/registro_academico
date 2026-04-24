@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from app.models.quarter import Quarter
+from models.quarter import Quarter
 
 def ensure_quarter_open(db: Session, quarter_id: int):
     q = db.query(Quarter).filter(Quarter.id == quarter_id).first()

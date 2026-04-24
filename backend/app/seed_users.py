@@ -1,28 +1,25 @@
-from app.database import SessionLocal
-from app.models.user import User
-from app.security import hash_password
+from database import SessionLocal
+from models.user import User
+from security import hash_password
 
-db = SessionLocal()
+def run():
+    db = SessionLocal()
 
-users = [
-    ("teacher1", "1234", "TEACHER"),
-    ("coord1", "1234", "COORDINATION"),
-    ("admin1", "1234", "ADMIN"),
-]
+    if db.query(User).first():
+        print("Users already seeded")
+        db.close()
+        return
 
-for username, password, role in users:
-    exists = db.query(User).filter(User.username == username).first()
-    if not exists:
-        db.add(
-            User(
-                username=username,
-                hashed_password=hash_password(password),
-                role=role,
-                active=True
-            )
-        )
+    users = [
+        User(username="admin", hashed_password=hash_password("admin123"), role="ADMIN", active=True),
+        User(username="teacher", hashed_password=hash_password("teacher123"), role="TEACHER", active=True),
+    ]
 
-db.commit()
-db.close()
+    db.add_all(users)
+    db.commit()
+    db.close()
 
-print("✅ Users seeded")
+    print("✅ Users seeded")
+
+if __name__ == "__main__":
+    run()
