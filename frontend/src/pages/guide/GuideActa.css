@@ -1,0 +1,173 @@
+.ga-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ga-head h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.ga-sub {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.ga-msg {
+  padding: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.ga-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.ga-panel h2 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+}
+
+.ga-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.ga-field {
+  flex: 1;
+  min-width: 260px;
+}
+
+.ga-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.ga-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  outline: none;
+}
+
+.ga-field input:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 4px rgba(0,117,189,.15);
+}
+
+.ga-help {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ===== Estado firmas ===== */
+.ga-status {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.ga-status-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9fafb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ga-status-item span {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ok {
+  color: #166534;
+  font-weight: 900;
+}
+
+.pending {
+  color: #92400e;
+  font-weight: 900;
+}
+
+/* ===== Botones estandarizados ===== */
+.ga-actions,
+.ga-actions-inline {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ga-actions-inline {
+  margin-top: 12px;
+}
+
+/* ✅ Botón estándar: mismo alto y mismo ancho */
+.btn {
+  height: 44px;
+  width: 190px;         /* <-- MISMO ancho para ambos */
+  padding: 0 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  user-select: none;
+  transition: filter .15s ease, transform .05s ease, opacity .15s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  background: #16a34a;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: #fff;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.ga-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+@media (max-width: 900px) {
+  .ga-status { grid-template-columns: 1fr; }
+  .btn { width: 100%; }  /* en móvil, sí conviene full width */
+}

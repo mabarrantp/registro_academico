@@ -1,0 +1,152 @@
+:root{
+  /* Luego afinamos con los colores exactos del sitio */
+  --hca-primary: #0b1220;
+  --hca-accent:  #2563eb;
+  --hca-bg:      #f3f4f6;
+}
+
+.login-wrap{
+  min-height: 100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 24px;
+  background: var(--hca-bg);
+}
+
+.login-card{
+  width: 480px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.08);
+  padding: 22px;
+}
+
+.login-header{
+  display:flex;
+  gap: 14px;
+  align-items:center;
+  margin-bottom: 14px;
+}
+
+.login-logo{
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  border-radius: 12px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.login-card h1{
+  margin: 0;
+  font-size: 22px;
+  color: #111827;
+}
+
+.muted{ color: #6b7280; margin: 4px 0 0 0; }
+.small{ font-size: 12px; }
+
+label{
+  display:block;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #111827;
+  font-weight: 700;
+}
+
+input{
+  width:100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  outline: none;
+  font-size: 14px;
+}
+
+input:focus{
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+}
+
+.pass-row{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+
+.ghost{
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  cursor: pointer;
+  font-weight: 800;
+  color: #111827;
+}
+
+.ghost:hover{
+  background: #f3f4f6;
+}
+
+.login-options{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top: 12px;
+}
+
+.check{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  font-weight: 700;
+  color: #111827;
+  font-size: 13px;
+}
+
+.check input{ width: 16px; height: 16px; margin: 0; }
+
+.help{
+  font-size: 13px;
+  color: var(--hca-accent);
+  font-weight: 800;
+  cursor: default;
+}
+
+.primary{
+  width:100%;
+  margin-top: 16px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: none;
+  background: var(--hca-accent);
+  color: white;
+  font-weight: 900;
+  cursor:pointer;
+  font-size: 14px;
+}
+
+.primary:disabled{
+  opacity: .7;
+  cursor:not-allowed;
+}
+
+.msg{
+  margin-top: 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.login-footer{
+  margin-top: 16px;
+  display:flex;
+  justify-content:center;
+}

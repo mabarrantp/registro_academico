@@ -1,0 +1,108 @@
+.gh-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gh-head h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.gh-sub {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.gh-loading {
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.gh-msg {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.gh-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.gh-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  border-left: 6px solid #0075BD; /* azul HCA por defecto */
+}
+
+.gh-card-value {
+  font-size: 26px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.gh-card-label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.gh-card.blue   { border-left-color: #0075BD; }
+.gh-card.orange { border-left-color: #f59e0b; }
+.gh-card.green  { border-left-color: #16a34a; }
+.gh-card.red    { border-left-color: #dc2626; }
+
+.gh-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.gh-panel h2 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+}
+
+.gh-empty {
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #6b7280;
+}
+
+.gh-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gh-table th, .gh-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.gh-table th {
+  background: #f9fafb;
+  text-align: left;
+}
+
+@media (max-width: 1100px) {
+  .gh-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 650px) {
+  .gh-cards { grid-template-columns: 1fr; }
+}

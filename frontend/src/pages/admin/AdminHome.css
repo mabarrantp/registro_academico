@@ -1,0 +1,137 @@
+.ah-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ah-head h1 {
+  margin: 0;
+  font-size: 22px;
+  color: #111827;
+}
+
+.ah-sub {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.ah-loading {
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+/* KPI cards */
+.ah-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.ah-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  border-left: 6px solid #0075BD;
+}
+
+.ah-card-value {
+  font-size: 26px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.ah-card-label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+/* tones */
+.ah-card.blue { border-left-color: #0075BD; }
+.ah-card.blue2 { border-left-color: #005A99; }
+.ah-card.green { border-left-color: #16a34a; }
+.ah-card.orange { border-left-color: #f59e0b; }
+.ah-card.red { border-left-color: #dc2626; }
+
+/* warnings */
+.ah-warn {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.ah-warn-title {
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+
+.ah-warn-foot {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* panel actions */
+.ah-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.ah-panel h2 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+}
+
+.ah-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.ah-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  transition: transform .05s ease, border-color .15s ease;
+}
+
+.ah-link:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.ah-link-title {
+  font-weight: 900;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.ah-link-desc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* responsive */
+@media (max-width: 1100px) {
+  .ah-cards { grid-template-columns: repeat(2, 1fr); }
+  .ah-actions { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .ah-cards { grid-template-columns: 1fr; }
+  .ah-actions { grid-template-columns: 1fr; }
+}
