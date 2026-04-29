@@ -4,7 +4,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 from sqlalchemy.exc import IntegrityError
 
-from database import SessionLocal
+from app.database import SessionLocal
 from models.student import Student
 from models.grade import Grade
 from models.section import Section

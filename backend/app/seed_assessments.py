@@ -1,4 +1,4 @@
-from database import SessionLocal
+from app.database import SessionLocal
 from models.assessment import Assessment
 from models.student import Student
 from models.subject import Subject

@@ -1,21 +1,37 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey, Boolean, String
-from database import Base
+from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy.orm import relationship
+
+from app.database import Base
+
 
 class Assessment(Base):
     __tablename__ = "assessments"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
 
-    student_id = Column(Integer, ForeignKey("students.id"), nullable=False)
-    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=False)
-    teacher_id = Column(Integer, ForeignKey("teachers.id"), nullable=False)
-    grade_id = Column(Integer, ForeignKey("grades.id"), nullable=False)
-    quarter_id = Column(Integer, ForeignKey("quarters.id"), nullable=False)
-    category_id = Column(Integer, ForeignKey("assessment_categories.id"), nullable=False)
+    # Relación con la asignación docente
+    teacher_assignment_id = Column(
+        Integer,
+        ForeignKey("teacher_assignments.id"),
+        nullable=False,
+    )
 
+    # Estudiante evaluado
+    student_id = Column(
+        Integer,
+        ForeignKey("students.id"),
+        nullable=False,
+    )
+
+    # Quarter (1, 2, 3, 4)
+    quarter = Column(Integer, nullable=False)
+
+    # Tipo de evaluación (QUIZ, EXAM, PROJECT, etc.)
+    assessment_type = Column(String(50), nullable=False)
+
+    # Nota (0–100)
     score = Column(Float, nullable=False)
-    on_time = Column(Boolean, default=True)
-    comments = Column(String, nullable=True)
 
-    # ✅ NUEVO: estado de la actividad
-    status = Column(String, nullable=False, default="ACTIVE")  # ACTIVE | EXCLUDED
+    # Relaciones
+    teacher_assignment = relationship("TeacherAssignment")
+    student = relationship("Student")

@@ -1,4 +1,4 @@
-from database import SessionLocal
+from app.database import SessionLocal
 from models.grade_policy import GradePolicy
 from models.subject import Subject
 from models.grade import Grade

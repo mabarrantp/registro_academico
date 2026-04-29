@@ -1,10 +1,2 @@
-from routers import (
-    students,
-    enrollments,
-    grades,
-    quarters,
-    assessments,
-    quarter_grades,
-    final_grades,
-    audit_logs,
-)
+# Este archivo solo marca el paquete "routers"
+# No debe importar nada

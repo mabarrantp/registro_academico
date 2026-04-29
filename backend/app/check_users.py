@@ -1,4 +1,4 @@
-from database import SessionLocal
+from app.database import SessionLocal
 from odels.user import User
 
 db = SessionLocal()

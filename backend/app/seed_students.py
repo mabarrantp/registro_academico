@@ -2,7 +2,7 @@ from openpyxl import load_workbook
 import re
 from pathlib import Path
 
-from database import SessionLocal
+from app.database import SessionLocal
 from models.student import Student
 
 ROSTER_FILE = Path(__file__).with_name("REGISTRO ACADEMICO ROSTER.xlsx")

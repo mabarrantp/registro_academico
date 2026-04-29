@@ -1,4 +1,4 @@
-from database import SessionLocal
+from app.database import SessionLocal
 from models.teacher_role import TeacherRole
 
 

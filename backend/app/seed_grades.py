@@ -1,41 +1,27 @@
-from database import SessionLocal
-from models.grade import Grade
+from sqlalchemy.orm import Session
+
+from app.models.grade import Grade
 
 
-def run():
-    db = SessionLocal()
-
-    grades = [
-        # PRIMARIA
-        Grade(name="1°", level="PRIMARIA"),
-        Grade(name="2°", level="PRIMARIA"),
-        Grade(name="3°", level="PRIMARIA"),
-        Grade(name="4°", level="PRIMARIA"),
-        Grade(name="5°", level="PRIMARIA"),
-        Grade(name="6°", level="PRIMARIA"),
-        # SECUNDARIA
-        Grade(name="7°", level="SECUNDARIA"),
-        Grade(name="8°", level="SECUNDARIA"),
-        Grade(name="9°", level="SECUNDARIA"),
-        Grade(name="10°", level="SECUNDARIA"),
-        Grade(name="11°", level="SECUNDARIA"),
+def seed_grades(db: Session):
+    grades_data = [
+        {"code": "1st", "order": 1, "level": "PRIMARY", "label": "1st Grade"},
+        {"code": "2nd", "order": 2, "level": "PRIMARY", "label": "2nd Grade"},
+        {"code": "3rd", "order": 3, "level": "PRIMARY", "label": "3rd Grade"},
+        {"code": "4th", "order": 4, "level": "PRIMARY", "label": "4th Grade"},
+        {"code": "5th", "order": 5, "level": "PRIMARY", "label": "5th Grade"},
+        {"code": "6th", "order": 6, "level": "PRIMARY", "label": "6th Grade"},
+        {"code": "7th", "order": 7, "level": "SECONDARY", "label": "7th Grade"},
+        {"code": "8th", "order": 8, "level": "SECONDARY", "label": "8th Grade"},
+        {"code": "9th", "order": 9, "level": "SECONDARY", "label": "9th Grade"},
+        {"code": "10th", "order": 10, "level": "SECONDARY", "label": "10th Grade"},
+        {"code": "11th", "order": 11, "level": "SECONDARY", "label": "11th Grade"},
     ]
 
-    created = 0
-    skipped = 0
-
-    for g in grades:
-        if db.query(Grade).filter(Grade.name == g.name).first():
-            skipped += 1
-        else:
-            db.add(g)
-            created += 1
+    for g in grades_data:
+        exists = db.query(Grade).filter(Grade.code == g["code"]).first()
+        if not exists:
+            db.add(Grade(**g, active=True))
 
     db.commit()
-    db.close()
-
-    print(f"✅ Grades cargados | created={created} skipped={skipped}")
-
-
-if __name__ == "__main__":
-    run()
+    print("✅ Grades sembrados")

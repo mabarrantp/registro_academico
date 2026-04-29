@@ -1,4 +1,4 @@
-from database import SessionLocal
+from app.database import SessionLocal
 from models.assessment_category import AssessmentCategory
 
 

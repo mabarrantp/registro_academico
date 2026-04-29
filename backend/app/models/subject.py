@@ -1,9 +1,10 @@
 from sqlalchemy import Column, Integer, String
-from database import Base
+from app.database import Base
+
 
 class Subject(Base):
     __tablename__ = "subjects"
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False, unique=True)
-    category = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False, unique=True)
+    category = Column(String(50), nullable=False)

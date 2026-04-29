@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Boletín Académico</title>
+
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #000;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            margin: 4px 0;
+        }
+
+        .header {
+            margin-bottom: 10px;
+        }
+
+        .info {
+            margin: 10px 0;
+        }
+
+            .info strong {
+                width: 140px;
+                display: inline-block;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #000;
+            padding: 5px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        td.left {
+            text-align: left;
+        }
+
+        .legend {
+            margin-top: 20px;
+            font-size: 11px;
+        }
+
+        .signatures {
+            margin-top: 50px;
+            width: 100%;
+        }
+
+        .signature-box {
+            width: 45%;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .signature-line {
+            margin-top: 40px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ENCABEZADO -->
+    <div class="header">
+        <h2>INSTITUCIÓN EDUCATIVA</h2>
+        <h3>BOLETÍN ACADÉMICO</h3>
+    </div>
+
+    <!-- INFORMACIÓN GENERAL -->
+    <div class="info">
+        <p><strong>Estudiante:</strong> {{ student }}</p>
+        <p><strong>Año Académico:</strong> {{ academic_year }}</p>
+    </div>
+
+    <!-- TABLA DE NOTAS -->
+    <table>
+        <thead>
+            <tr>
+                <th class="left">Asignatura</th>
+                <th>Q1</th>
+                <th>Q2</th>
+                <th>Q3</th>
+                <th>Q4</th>
+                <th>Final</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report_card %}
+            <tr>
+                <td class="left">{{ item.subject }}</td>
+
+                {% for q in ["Q1", "Q2", "Q3", "Q4"] %}
+                <td>
+                    {{ item.quarters.get(q, {}).get("quantitative", "") }}<br>
+                    <small>{{ item.quarters.get(q, {}).get("qualitative", "") }}</small>
+                </td>
+                {% endfor %}
+
+                <td>
+                    {{ item.final_average }}<br>
+                    <small>{{ item.final_qualitative }}</small>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- LEYENDA -->
+    <div class="legend">
+        <p>
+            <strong>Leyenda:</strong><br>
+            AA: Aprendizaje Avanzado &nbsp;|&nbsp;
+            AS: Aprendizaje Satisfactorio &nbsp;|&nbsp;
+            AF: Aprendizaje Elemental &nbsp;|&nbsp;
+            AI: En Proceso de Mejora
+        </p>

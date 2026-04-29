@@ -1,18 +1,24 @@
-from sqlalchemy import Column, Integer, String, Boolean
-from database import Base
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+from app.database import Base
 
 
 class Student(Base):
     __tablename__ = "students"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
+    student_code = Column(String(20), unique=True, nullable=False)
 
-    # ✅ Código interno del colegio (viene de tu Excel: CODE)
-    local_code = Column(String, unique=True, index=True, nullable=False)
+    first_name = Column(String(80), nullable=False)
+    last_name = Column(String(80), nullable=False)
 
-    # ✅ Código oficial MINED / Registro General (opcional)
-    mined_id = Column(String, unique=True, index=True, nullable=True)
+    entry_year = Column(Integer, nullable=False)
+    entry_grade_id = Column(Integer, ForeignKey("grades.id"), nullable=False)
+    current_grade_id = Column(Integer, ForeignKey("grades.id"), nullable=False)
 
-    first_name = Column(String, nullable=False)
-    last_name = Column(String, nullable=False)
     active = Column(Boolean, default=True)
+
+    # ✅ Relaciones
+    entry_grade = relationship("Grade", foreign_keys=[entry_grade_id])
+    current_grade = relationship("Grade", foreign_keys=[current_grade_id])
+    enrollments = relationship("Enrollment", back_populates="student")

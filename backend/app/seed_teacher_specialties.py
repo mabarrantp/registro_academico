@@ -1,4 +1,4 @@
-from database import SessionLocal
+from app.database import SessionLocal
 from models.teacher import Teacher
 from models.subject import Subject
 from models.teacher_specialty import TeacherSpecialty

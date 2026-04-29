@@ -1,30 +1,44 @@
-from database import SessionLocal
-from models.quarter import Quarter
+from sqlalchemy.orm import Session
+
+from app.models.quarter import Quarter
 
 
-def run():
-    db = SessionLocal()
-
-    academic_year = 2025
-
-    if db.query(Quarter).filter(Quarter.academic_year == academic_year).first():
-        print(f"Quarters already seeded for {academic_year}")
-        db.close()
-        return
-
+def seed_quarters(db: Session, academic_year: int = 2025):
     quarters = [
-        Quarter(code="QI", academic_year=academic_year, status="OPEN"),
-        Quarter(code="QII", academic_year=academic_year, status="OPEN"),
-        Quarter(code="QIII", academic_year=academic_year, status="OPEN"),
-        Quarter(code="QIV", academic_year=academic_year, status="OPEN"),
+        ("Q1", academic_year),
+        ("Q2", academic_year),
+        ("Q3", academic_year),
+        ("Q4", academic_year),
     ]
 
-    db.add_all(quarters)
+    created = 0
+    skipped = 0
+
+    for code, year in quarters:
+        exists = (
+            db.query(Quarter)
+            .filter(
+                Quarter.code == code,
+                Quarter.academic_year == year,
+            )
+            .first()
+        )
+
+        if exists:
+            skipped += 1
+            continue
+
+        db.add(
+            Quarter(
+                code=code,
+                academic_year=year,
+                status="OPEN",
+            )
+        )
+        created += 1
+
     db.commit()
-    db.close()
 
-    print(f"✅ Quarters seeded for academic year {academic_year}")
-
-
-if __name__ == "__main__":
-    run()
+    print(
+        f"✅ Quarters sembrados | created={created} skipped={skipped}"
+    )

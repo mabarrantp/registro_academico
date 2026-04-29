@@ -1,115 +1,311 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from datetime import date
 
-from database import get_db
-from models.assessment import Assessment
-from models.quarter import Quarter
-from security import get_current_user, require_roles
+from app.database import get_db
+from app.security import get_current_user
+from app.models.assessment import Assessment
+from app.models.teacher_assignment import TeacherAssignment
+from app.models.quarter import Quarter
+from app.models.student import Student
+
 
 router = APIRouter(
     prefix="/assessments",
-    tags=["Assessments"]
+    tags=["Assessments"],
 )
 
-# =====================================================
-# CREATE ASSESSMENT
-# =====================================================
-@router.post("/")
-def create_assessment(
-    student_id: int,
-    subject_id: int,
-    teacher_id: int,
-    grade_id: int,
-    quarter_id: int,
-    category_id: int,
-    score: float,
-    academic_year: int,
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user)
-):
-    # 🔒 SOLO TEACHER / ADMIN / COORDINATION
-    require_roles("TEACHER", "ADMIN", "COORDINATION")(user)
 
-    # 🔒 VALIDAR QUARTER
-    quarter = (
-        db.query(Quarter)
-        .filter(
-            Quarter.id == quarter_id,
-            Quarter.academic_year == academic_year
-        )
-        .first()
-    )
-
+# -------------------------------------------------
+# ✅ Helper: validar quarter OPEN
+# -------------------------------------------------
+def validate_quarter_open(db: Session, quarter_id: int):
+    quarter = db.query(Quarter).filter(Quarter.id == quarter_id).first()
     if not quarter:
-        raise HTTPException(status_code=404, detail="Quarter not found")
+        raise HTTPException(status_code=404, detail="Quarter no encontrado")
 
-    if quarter.status != "OPEN":
+    if quarter.status == "CLOSED":
         raise HTTPException(
-            status_code=403,
-            detail="This quarter is closed. You cannot add assessments."
+            status_code=400,
+            detail=f"El quarter {quarter.code} está cerrado. No se pueden modificar evaluaciones.",
         )
 
-    assessment = Assessment(
-        student_id=student_id,
-        subject_id=subject_id,
-        teacher_id=teacher_id,
-        grade_id=grade_id,
-        quarter_id=quarter_id,
-        category_id=category_id,
-        score=score,
-        on_time=True,
-        status="ACTIVE"
-    )
 
-    db.add(assessment)
-    db.commit()
-    db.refresh(assessment)
-
-    return assessment
-
-
-# =====================================================
-# UPDATE ASSESSMENT
-# =====================================================
-@router.put("/{assessment_id}")
-def update_assessment(
-    assessment_id: int,
-    score: float,
+# -------------------------------------------------
+# ✅ POST: crear evaluación por EVENTO (batch)
+# -------------------------------------------------
+@router.post("/event")
+def create_assessment_event(
+    payload: dict,
     db: Session = Depends(get_db),
-    user = Depends(get_current_user)
+    user=Depends(get_current_user),
 ):
-    require_roles("TEACHER", "ADMIN", "COORDINATION")(user)
+    if user.role != "TEACHER":
+        raise HTTPException(status_code=403, detail="Solo docentes")
 
-    assessment = (
-        db.query(Assessment)
-        .filter(Assessment.id == assessment_id)
-        .first()
-    )
+    assignment_id = payload.get("assignment_id")
+    quarter_id = payload.get("quarter_id")
+    assessment_type = payload.get("assessment_type")
+    topic = payload.get("topic")
+    assigned_date_str = payload.get("assigned_date")
+    grades = payload.get("grades", [])
 
-    if not assessment:
-        raise HTTPException(status_code=404, detail="Assessment not found")
+    if not all([assignment_id, quarter_id, assessment_type, topic, assigned_date_str]):
+        raise HTTPException(status_code=400, detail="Datos incompletos")
 
-    quarter = (
-        db.query(Quarter)
-        .filter(Quarter.id == assessment.quarter_id)
-        .first()
-    )
-
-    if quarter.status != "OPEN":
+    try:
+        assigned_date = date.fromisoformat(assigned_date_str)
+    except ValueError:
         raise HTTPException(
-            status_code=403,
-            detail="This quarter is closed. You cannot modify assessments."
+            status_code=400,
+            detail="assigned_date debe tener formato YYYY-MM-DD",
         )
 
-    assessment.score = score
+    validate_quarter_open(db, quarter_id)
+
+    assignment = (
+        db.query(TeacherAssignment)
+        .filter(
+            TeacherAssignment.id == assignment_id,
+            TeacherAssignment.teacher_id == user.teacher_id,
+        )
+        .first()
+    )
+    if not assignment:
+        raise HTTPException(status_code=403, detail="Asignación no válida")
+
+    created = 0
+
+    for g in grades:
+        student = db.query(Student).filter(Student.id == g["student_id"]).first()
+        if not student:
+            continue
+
+        db.add(
+            Assessment(
+                teacher_assignment_id=assignment_id,
+                student_id=student.id,
+                quarter=quarter_id,
+                assessment_type=assessment_type,
+                topic=topic,
+                assigned_date=assigned_date,
+                score=g["score"],
+            )
+        )
+        created += 1
+
     db.commit()
 
-    return assessment
+    return {
+        "message": "Evaluación creada correctamente",
+        "assessment_type": assessment_type,
+        "topic": topic,
+        "students_evaluated": created,
+    }
 
 
-# =====================================================
-# LIST ASSESSMENTS
-# =====================================================
-@router.get("/")
-def list_assessments(db: Session = Depends(get_db)):
-    return db.query(Assessment).all()
+# -------------------------------------------------
+# ✅ GET: listar evaluaciones (WORKFLOW)
+# -------------------------------------------------
+@router.get("/events")
+def list_assessment_events(
+    assignment_id: int,
+    quarter_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    if user.role != "TEACHER":
+        raise HTTPException(status_code=403, detail="Solo docentes")
+
+    events = (
+        db.query(
+            Assessment.assessment_type,
+            Assessment.topic,
+            Assessment.assigned_date,
+        )
+        .filter(
+            Assessment.teacher_assignment_id == assignment_id,
+            Assessment.quarter == quarter_id,
+        )
+        .group_by(
+            Assessment.assessment_type,
+            Assessment.topic,
+            Assessment.assigned_date,
+        )
+        .order_by(Assessment.assigned_date.desc())
+        .all()
+    )
+
+    return [
+        {
+            "assessment_type": e.assessment_type,
+            "topic": e.topic,
+            "assigned_date": e.assigned_date,
+        }
+        for e in events
+    ]
+
+
+# -------------------------------------------------
+# ✅ GET: detalle de evaluación por EVENTO
+# -------------------------------------------------
+@router.get("/event/detail")
+def get_assessment_event_detail(
+    assignment_id: int,
+    quarter_id: int,
+    assessment_type: str,
+    topic: str,
+    assigned_date: str,  # ✅ STRING (Pydantic v2 safe)
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    if user.role != "TEACHER":
+        raise HTTPException(status_code=403, detail="Solo docentes")
+
+    try:
+        assigned_date_obj = date.fromisoformat(assigned_date)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="assigned_date debe tener formato YYYY-MM-DD",
+        )
+
+    records = (
+        db.query(Assessment, Student)
+        .join(Student, Student.id == Assessment.student_id)
+        .filter(
+            Assessment.teacher_assignment_id == assignment_id,
+            Assessment.quarter == quarter_id,
+            Assessment.assessment_type == assessment_type,
+            Assessment.topic == topic,
+            Assessment.assigned_date == assigned_date_obj,
+        )
+        .order_by(Student.last_name)
+        .all()
+    )
+
+    if not records:
+        raise HTTPException(status_code=404, detail="Evaluación no encontrada")
+
+    return {
+        "assessment_type": assessment_type,
+        "topic": topic,
+        "assigned_date": assigned_date,
+        "grades": [
+            {
+                "student_id": s.id,
+                "student_name": f"{s.first_name} {s.last_name}",
+                "score": a.score,
+            }
+            for a, s in records
+        ],
+    }
+
+
+# -------------------------------------------------
+# ✅ PUT: editar notas del EVENTO (batch)
+# -------------------------------------------------
+@router.put("/event")
+def update_assessment_event(
+    payload: dict,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    if user.role != "TEACHER":
+        raise HTTPException(status_code=403, detail="Solo docentes")
+
+    assignment_id = payload.get("assignment_id")
+    quarter_id = payload.get("quarter_id")
+    assessment_type = payload.get("assessment_type")
+    topic = payload.get("topic")
+    assigned_date_str = payload.get("assigned_date")
+    grades = payload.get("grades", [])
+
+    if not all([assignment_id, quarter_id, assessment_type, topic, assigned_date_str]):
+        raise HTTPException(status_code=400, detail="Datos incompletos")
+
+    try:
+        assigned_date = date.fromisoformat(assigned_date_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="assigned_date debe tener formato YYYY-MM-DD",
+        )
+
+    validate_quarter_open(db, quarter_id)
+
+    records = (
+        db.query(Assessment)
+        .filter(
+            Assessment.teacher_assignment_id == assignment_id,
+            Assessment.quarter == quarter_id,
+            Assessment.assessment_type == assessment_type,
+            Assessment.topic == topic,
+            Assessment.assigned_date == assigned_date,
+        )
+        .all()
+    )
+
+    if not records:
+        raise HTTPException(status_code=404, detail="Evaluación no encontrada")
+
+    updated = 0
+
+    for r in records:
+        for g in grades:
+            if r.student_id == g["student_id"]:
+                r.score = g["score"]
+                updated += 1
+
+    db.commit()
+
+    return {
+        "message": "Evaluación actualizada correctamente",
+        "students_updated": updated,
+    }
+
+
+# -------------------------------------------------
+# ✅ DELETE: eliminar EVENTO completo
+# -------------------------------------------------
+@router.delete("/event")
+def delete_assessment_event(
+    assignment_id: int,
+    quarter_id: int,
+    assessment_type: str,
+    topic: str,
+    assigned_date: str,  # ✅ STRING
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    if user.role != "TEACHER":
+        raise HTTPException(status_code=403, detail="Solo docentes")
+
+    try:
+        assigned_date_obj = date.fromisoformat(assigned_date)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="assigned_date debe tener formato YYYY-MM-DD",
+        )
+
+    validate_quarter_open(db, quarter_id)
+
+    deleted = (
+        db.query(Assessment)
+        .filter(
+            Assessment.teacher_assignment_id == assignment_id,
+            Assessment.quarter == quarter_id,
+            Assessment.assessment_type == assessment_type,
+            Assessment.topic == topic,
+            Assessment.assigned_date == assigned_date_obj,
+        )
+        .delete()
+    )
+
+    db.commit()
+
+    return {
+        "message": "Evaluación eliminada correctamente",
+        "records_deleted": deleted,
+    }
