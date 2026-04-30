@@ -7,7 +7,6 @@ from app.schemas.academic_year import (
     AcademicYearResponse
 )
 from app.services import academic_year_service
-from app.core.security import require_admin
 
 router = APIRouter(
     prefix="/academic-years",
@@ -16,18 +15,14 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[AcademicYearResponse])
-def list_academic_years(
-    db: Session = Depends(get_db),
-    admin=Depends(require_admin)
-):
-    return academic_year_service.list_academic_years(db)
+def list_academic_years(db: Session = Depends(get_db)):
+    return academic_year_service.get_all_academic_years(db)
 
 
 @router.post("", response_model=AcademicYearResponse)
 def create_academic_year(
     data: AcademicYearCreate,
-    db: Session = Depends(get_db),
-    admin=Depends(require_admin)
+    db: Session = Depends(get_db)
 ):
     return academic_year_service.create_academic_year(db, data)
 
@@ -35,8 +30,7 @@ def create_academic_year(
 @router.post("/{year_id}/open", response_model=AcademicYearResponse)
 def open_academic_year(
     year_id: int,
-    db: Session = Depends(get_db),
-    admin=Depends(require_admin)
+    db: Session = Depends(get_db)
 ):
     return academic_year_service.open_academic_year(db, year_id)
 
@@ -44,7 +38,7 @@ def open_academic_year(
 @router.post("/{year_id}/close", response_model=AcademicYearResponse)
 def close_academic_year(
     year_id: int,
-    db: Session = Depends(get_db),
-    admin=Depends(require_admin)
+    db: Session = Depends(get_db)
 ):
     return academic_year_service.close_academic_year(db, year_id)
+
