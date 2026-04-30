@@ -1,14 +1,22 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
+from sqlalchemy.orm import Session
+from typing import Optional
 
 from app.database import get_db
 from app.security import get_current_user
-from app.models.assessment import Assessment
-from app.models.teacher_assignment import TeacherAssignment
-from app.models.quarter import Quarter
-from app.models.quarter_weight import QuarterWeight
-from app.models.student import Student
+from app.services.grades_service import (
+    get_grades,
+    get_final_average_by_student,
+)
+from app.schemas.grades import (
+    GradesResponseSchema,
+    FinalAverageSchema,
+)
 
+
+# =====================================================
+# Router
+# =====================================================
 
 router = APIRouter(
     prefix="/grades",
@@ -16,92 +24,62 @@ router = APIRouter(
 )
 
 
-# -------------------------------------------------
-# ✅ GET: GRADES consolidado (solo lectura)
-# -------------------------------------------------
-@router.get("")
-def get_grades(
-    assignment_id: int = Query(...),
-    quarter_id: int = Query(...),
+# =====================================================
+# GET /grades
+# 👉 Listado de notas (con filtros)
+# =====================================================
+
+@router.get(
+    "",
+    response_model=GradesResponseSchema,
+    summary="Obtener notas",
+    description="Devuelve el listado de notas según los filtros aplicados.",
+)
+def list_grades(
+    student_id: Optional[int] = Query(None, description="ID del estudiante"),
+    section_id: Optional[int] = Query(None, description="ID de la sección"),
+    quarter_id: Optional[int] = Query(None, description="ID del quarter"),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    # 🔒 Acceso: docente, coordinación, admin
+    # 🔒 Control de acceso
     if user.role not in ("TEACHER", "ADMIN", "COORDINATION"):
         raise HTTPException(status_code=403, detail="No autorizado")
 
-    assignment = (
-        db.query(TeacherAssignment)
-        .filter(TeacherAssignment.id == assignment_id)
-        .first()
-    )
-    if not assignment:
-        raise HTTPException(status_code=404, detail="Asignación no encontrada")
-
-    quarter = db.query(Quarter).filter(Quarter.id == quarter_id).first()
-    if not quarter:
-        raise HTTPException(status_code=404, detail="Quarter no encontrado")
-
-    weights_row = (
-        db.query(QuarterWeight)
-        .filter(
-            QuarterWeight.quarter_id == quarter_id,
-            QuarterWeight.subject_id == assignment.subject_id,
-            QuarterWeight.section_id == assignment.section_id,
-        )
-        .first()
-    )
-    if not weights_row:
-        raise HTTPException(
-            status_code=400,
-            detail="No hay ponderaciones definidas para este quarter",
-        )
-
-    weights = weights_row.weights
-
-    students = (
-        db.query(Student)
-        .join(Assessment, Assessment.student_id == Student.id)
-        .filter(
-            Assessment.teacher_assignment_id == assignment_id,
-            Assessment.quarter == quarter_id,
-        )
-        .distinct()
-        .all()
+    grades = get_grades(
+        db=db,
+        student_id=student_id,
+        section_id=section_id,
+        quarter_id=quarter_id,
     )
 
-    grades = []
+    return {"grades": grades}
 
-    for student in students:
-        row = {
-            "student_id": student.id,
-            "student_name": f"{student.first_name} {student.last_name}",
-        }
 
-        final_grade = 0.0
+# =====================================================
+# GET /grades/final-average
+# 👉 Promedio final del estudiante
+# =====================================================
 
-        for assessment_type, weight in weights.items():
-            avg_score = (
-                db.query(func.avg(Assessment.score))
-                .filter(
-                    Assessment.teacher_assignment_id == assignment_id,
-                    Assessment.quarter == quarter_id,
-                    Assessment.student_id == student.id,
-                    Assessment.assessment_type == assessment_type,
-                )
-                .scalar()
-            )
+@router.get(
+    "/final-average",
+    response_model=FinalAverageSchema,
+    summary="Promedio final del estudiante",
+    description="Calcula el promedio final del estudiante en todas las materias.",
+)
+def get_final_average(
+    student_id: int = Query(..., description="ID del estudiante"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    # 🔒 Control de acceso
+    if user.role not in ("TEACHER", "ADMIN", "COORDINATION"):
+        raise HTTPException(status_code=403, detail="No autorizado")
 
-            avg_score = round(avg_score, 2) if avg_score else 0
-            row[assessment_type] = avg_score
-            final_grade += (avg_score * weight) / 100
-
-        row["FINAL_GRADE"] = round(final_grade, 2)
-        grades.append(row)
-
-    return {
-        "assignment": f"{assignment.subject_id} – {assignment.section_id}",
-        "quarter": quarter.code,
-        "weights": weights,
-        "grades": grades,
-    }
+    try:
+        return get_final_average_by_student(
+            db=db,
+            student_id=student_id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

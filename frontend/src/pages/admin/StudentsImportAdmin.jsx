@@ -1,69 +1,81 @@
 import { useState } from "react";
-import { api } from "../../services/api";
 import "./StudentsImportAdmin.css";
 
 export default function StudentsImportAdmin() {
-  const [file, setFile] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+    const [file, setFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState(null);
+    const [error, setError] = useState(null);
 
-  async function importExcel() {
-    if (!file) return;
+    const handleFileChange = (e) => {
+        setFile(e.target.files[0]);
+        setMessage(null);
+        setError(null);
+    };
 
-    setLoading(true);
-    setResult(null);
+    const handleImport = async () => {
+        if (!file) {
+            setError("Seleccione un archivo para importar estudiantes");
+            return;
+        }
 
-    const formData = new FormData();
-    formData.append("file", file);
+        try {
+            setLoading(true);
+            setError(null);
+            setMessage(null);
 
-    try {
-      const res = await api.post("/students/import-xlsx", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setResult(res.data);
-    } catch (err) {
-      console.error(err);
-      setResult({
-        created: 0,
-        errors: ["❌ Error al importar el archivo"],
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+            const formData = new FormData();
+            formData.append("file", file);
 
-  return (
-    <div className="panel">
-      <h2>Importación Masiva de Estudiantes (Excel)</h2>
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"}/import/students`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                    body: formData,
+                }
+            );
 
-      <input
-        type="file"
-        accept=".xlsx"
-        onChange={(e) => setFile(e.target.files[0])}
-      />
+            if (!response.ok) {
+                throw new Error("Error al importar estudiantes");
+            }
 
-      <div className="actions">
-        <button className="btn btn-primary" onClick={importExcel} disabled={loading}>
-          {loading ? "Importando…" : "Importar Excel"}
-        </button>
-      </div>
+            setMessage("Estudiantes importados correctamente");
+            setFile(null);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      {result && (
-        <div className="result">
-          <p>✅ Estudiantes creados: {result.created}</p>
+    return (
+        <div className="students-import-admin">
+            <h2>Importar Estudiantes</h2>
 
-          {result.errors.length > 0 && (
-            <>
-              <p>⚠️ Errores:</p>
-              <ul>
-                {result.errors.map((e, i) => (
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            </>
-          )}
+            <div className="import-box">
+                <input
+                    type="file"
+                    accept=".csv, .xlsx"
+                    onChange={handleFileChange}
+                />
+
+                <button onClick={handleImport} disabled={!file || loading}>
+                    {loading ? "Importando..." : "Importar"}
+                </button>
+            </div>
+
+            {message && <p className="success">{message}</p>}
+            {error && <p className="error">{error}</p>}
+
+            <div className="import-help">
+                <p>
+                    El archivo debe contener los datos de los estudiantes en
+                    formato CSV o Excel.
+                </p>
+            </div>
         </div>
-      )}
-    </div>
-  );
+    );
 }

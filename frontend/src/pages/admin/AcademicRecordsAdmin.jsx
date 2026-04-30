@@ -1,223 +1,79 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../../services/api";
+import { useEffect, useState } from "react";
+import { getStudents, getAcademicYears, getReportCard, downloadReportCardPDF } from "../../services/api";
 import "./AcademicRecordsAdmin.css";
 
-export default function AcademicRecordsAdmin() {
-  const ctx = useMemo(() => ({ academicYear: 2025 }), []);
+function AcademicRecordsAdmin() {
+    const [students, setStudents] = useState([]);
+    const [years, setYears] = useState([]);
+    const [studentId, setStudentId] = useState("");
+    const [year, setYear] = useState("");
+    const [report, setReport] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+    useEffect(() => {
+        Promise.all([getStudents(), getAcademicYears()])
+            .then(([s, y]) => { setStudents(s); setYears(y); })
+            .catch((e) => setError(e.message));
+    }, []);
 
-  const [grades, setGrades] = useState([]);
-  const [sections, setSections] = useState([]);
+    const loadReport = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await getReportCard(studentId, year);
+            setReport(data);
+        } catch (e) {
+            setError(e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const [gradeId, setGradeId] = useState("");
-  const [sectionId, setSectionId] = useState("");
-  const [recordId, setRecordId] = useState("");
+    return (
+        <div className="academic-records-admin">
+            <h2>Boletín Académico</h2>
 
-  const [status, setStatus] = useState(null);
-
-  useEffect(() => {
-    loadCatalogs();
-    // eslint-disable-next-line
-  }, []);
-
-  async function loadCatalogs() {
-    try {
-      const [gRes, sRes] = await Promise.all([
-        api.get("/grades"),
-        api.get("/sections"),
-      ]);
-
-      setGrades(gRes.data || []);
-      setSections(
-        (sRes.data || []).filter(
-          (s) => !s.academic_year || s.academic_year === ctx.academicYear
-        )
-      );
-    } catch (err) {
-      console.error(err);
-      setMessage("❌ Error cargando catálogos.");
-    }
-  }
-
-  async function generateRecord() {
-    if (!gradeId || !sectionId) {
-      setMessage("⚠️ Selecciona grado y sección.");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const res = await api.post("/academic-records/generate", null, {
-        params: {
-          grade_id: Number(gradeId),
-          section_id: Number(sectionId),
-          academic_year: ctx.academicYear,
-        },
-      });
-
-      setRecordId(res.data.academic_record_id);
-      setMessage("✅ Acta académica generada.");
-    } catch (err) {
-      console.error(err);
-      setMessage(
-        err?.response?.data?.detail || "❌ No se pudo generar el acta."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function checkStatus() {
-    if (!recordId) {
-      setMessage("⚠️ Ingresa un Academic Record ID.");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const res = await api.get("/academic-record-signatures/status", {
-        params: { academic_record_id: Number(recordId) },
-      });
-
-      setStatus(res.data);
-      setMessage("✅ Estado de firmas cargado.");
-    } catch (err) {
-      console.error(err);
-      setStatus(null);
-      setMessage(
-        err?.response?.data?.detail || "❌ No se pudo consultar el estado."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="ar-admin">
-      <h1>Actas Académicas</h1>
-      <p className="subtitle">
-        Generación y seguimiento de firmas oficiales • Año {ctx.academicYear}
-      </p>
-
-      {message && <div className="message">{message}</div>}
-
-      {/* GENERAR ACTA */}
-      <div className="panel">
-        <h2>Generar Acta</h2>
-
-        <div className="grid">
-          <div>
-            <label>Grado</label>
-            <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
-              <option value="">Seleccione</option>
-              {grades.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
+            <select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+                <option value="">Estudiante</option>
+                {students.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
             </select>
-          </div>
 
-          <div>
-            <label>Sección</label>
-            <select
-              value={sectionId}
-              onChange={(e) => setSectionId(e.target.value)}
-            >
-              <option value="">Seleccione</option>
-              {sections
-                .filter((s) => String(s.grade_id) === String(gradeId))
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code || s.name}
-                  </option>
-                ))}
+            <select value={year} onChange={(e) => setYear(e.target.value)}>
+                <option value="">Año</option>
+                {years.map(y => <option key={y.id} value={y.year}>{y.year}</option>)}
             </select>
-          </div>
+
+            <button onClick={loadReport} disabled={!studentId || !year}>Consultar</button>
+
+            {loading && <p>Cargando...</p>}
+            {error && <p className="error">{error}</p>}
+
+            {report && (
+                <>
+                    <table className="records-table">
+                        <thead>
+                            <tr><th>Asignatura</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Final</th></tr>
+                        </thead>
+                        <tbody>
+                            {report.report_card.map((r, i) => (
+                                <tr key={i}>
+                                    <td>{r.subject}</td>
+                                    {["Q1", "Q2", "Q3", "Q4"].map(q => (
+                                        <td key={q}>{r.quarters[q]?.quantitative ?? "-"}<br /><small>{r.quarters[q]?.qualitative}</small></td>
+                                    ))}
+                                    <td>{r.final_average}<br /><small>{r.final_qualitative}</small></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <button onClick={() => downloadReportCardPDF(studentId, year)}>Descargar PDF</button>
+                </>
+            )}
         </div>
-
-        <div className="actions">
-          <button
-            className="btn btn-primary"
-            onClick={generateRecord}
-            disabled={loading}
-          >
-            {loading ? "Generando…" : "Generar Acta"}
-          </button>
-        </div>
-
-        {recordId && (
-          <div className="record-id">
-            Academic Record ID: <strong>{recordId}</strong>
-          </div>
-        )}
-      </div>
-
-      {/* ESTADO DE FIRMAS */}
-      <div className="panel">
-        <h2>Estado de Firmas</h2>
-
-        <div className="grid">
-          <div>
-            <label>Academic Record ID</label>
-            <input
-              type="number"
-              value={recordId}
-              onChange={(e) => setRecordId(e.target.value)}
-              placeholder="Ej: 1"
-            />
-          </div>
-        </div>
-
-        <div className="actions">
-          <button
-            className="btn btn-secondary"
-            onClick={checkStatus}
-            disabled={loading}
-          >
-            {loading ? "Consultando…" : "Ver Estado"}
-          </button>
-        </div>
-
-        {status && (
-          <div className="status">
-            <div>
-              <span>Maestro Guía</span>
-              <strong>
-                {status.signed_roles?.includes("GUIDE_TEACHER")
-                  ? "Firmado"
-                  : "Pendiente"}
-              </strong>
-            </div>
-            <div>
-              <span>Coordinación</span>
-              <strong>
-                {status.signed_roles?.includes("COORDINATION")
-                  ? "Firmado"
-                  : "Pendiente"}
-              </strong>
-            </div>
-            <div>
-              <span>Dirección</span>
-              <strong>
-                {status.signed_roles?.includes("DIRECTOR")
-                  ? "Firmado"
-                  : "—"}
-              </strong>
-            </div>
-            <div>
-              <span>Acta completa</span>
-              <strong>{status.is_fully_signed ? "Sí" : "No"}</strong>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 }
+
+export default AcademicRecordsAdmin;
+``

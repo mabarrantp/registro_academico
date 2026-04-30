@@ -1,161 +1,106 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../../services/api";
+import { useEffect, useState } from "react";
+import { getStudents, getFinalAverage } from "../../services/api";
 import "./PromotionAdmin.css";
 
 export default function PromotionAdmin() {
-  const ctx = useMemo(() => ({ academicYear: 2025 }), []);
+    const [students, setStudents] = useState([]);
+    const [studentId, setStudentId] = useState("");
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-  const [loading, setLoading] = useState(false);
-  const [running, setRunning] = useState(false);
-  const [message, setMessage] = useState("");
+    useEffect(() => {
+        async function loadStudents() {
+            try {
+                const data = await getStudents();
+                setStudents(data);
+            } catch (err) {
+                setError(err.message);
+            }
+        }
 
-  const [results, setResults] = useState([]);
+        loadStudents();
+    }, []);
 
-  async function runPromotion() {
-    const ok = window.confirm(
-      "¿Confirmas ejecutar la promoción final?\n\nEsta acción es DEFINITIVA."
-    );
-    if (!ok) return;
+    const handleCheckPromotion = async () => {
+        if (!studentId) return;
 
-    setRunning(true);
-    setMessage("");
+        try {
+            setLoading(true);
+            setError(null);
+            setResult(null);
 
-    try {
-      await api.post("/promotion/run", null, {
-        params: { academic_year: ctx.academicYear },
-      });
-      setMessage("✅ Promoción ejecutada correctamente.");
-      await loadResults();
-    } catch (err) {
-      console.error(err);
-      setMessage(
-        err?.response?.data?.detail || "❌ Error al ejecutar la promoción."
-      );
-    } finally {
-      setRunning(false);
-    }
-  }
+            const data = await getFinalAverage(studentId);
+            setResult(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  async function loadResults() {
-    setLoading(true);
-    setMessage("");
+    return (
+        <div className="promotion-admin">
+            <h2>Promoción de Estudiantes</h2>
 
-    try {
-      const res = await api.get("/promotion/results", {
-        params: { academic_year: ctx.academicYear },
-      });
-      setResults(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error(err);
-      setResults([]);
-      setMessage(
-        err?.response?.data?.detail || "❌ No se pudieron cargar resultados."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadResults();
-    // eslint-disable-next-line
-  }, []);
-
-  const promoted = results.filter((r) => r.status === "PROMOTED").length;
-  const retained = results.filter((r) => r.status === "RETAINED").length;
-
-  return (
-    <div className="promotion-admin">
-      <h1>Promoción Final</h1>
-      <p className="subtitle">
-        Cierre anual y resultados oficiales • Año {ctx.academicYear}
-      </p>
-
-      {message && <div className="message">{message}</div>}
-
-      <div className="panel">
-        <h2>Ejecutar promoción</h2>
-
-        <div className="actions">
-          <button
-            className="btn btn-danger"
-            onClick={runPromotion}
-            disabled={running}
-          >
-            {running ? "Ejecutando…" : "Ejecutar Promoción"}
-          </button>
-
-          <button
-            className="btn btn-secondary"
-            onClick={loadResults}
-            disabled={loading}
-          >
-            {loading ? "Cargando…" : "Refrescar Resultados"}
-          </button>
-        </div>
-      </div>
-
-      <div className="panel">
-        <h2>Resumen</h2>
-
-        <div className="summary">
-          <div>
-            <span>Promovidos</span>
-            <strong className="ok">{promoted}</strong>
-          </div>
-          <div>
-            <span>Retenidos</span>
-            <strong className="bad">{retained}</strong>
-          </div>
-          <div>
-            <span>Total</span>
-            <strong>{results.length}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div className="panel">
-        <h2>Resultados detallados</h2>
-
-        {loading ? (
-          <div className="loading">Cargando resultados…</div>
-        ) : results.length === 0 ? (
-          <div className="empty">No hay resultados para este año.</div>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Estudiante</th>
-                <th>Reprobadas</th>
-                <th>Resultado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((r, i) => (
-                <tr key={i}>
-                  <td className="strong">
-                    {r.student_name || r.student_id}
-                  </td>
-                  <td>{r.failed_subjects}</td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        r.status === "PROMOTED" ? "open" : "closed"
-                      }`}
+            <div className="promotion-controls">
+                <label>
+                    Estudiante:&nbsp;
+                    <select
+                        value={studentId}
+                        onChange={(e) => setStudentId(e.target.value)}
                     >
-                      {r.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                        <option value="">Seleccione</option>
+                        {students.map((s) => (
+                            <option key={s.id} value={s.id}>
+                                {s.first_name} {s.last_name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
 
-        <div className="hint">
-          * Una vez ejecutada la promoción, los resultados son oficiales.
+                <button
+                    onClick={handleCheckPromotion}
+                    disabled={!studentId || loading}
+                >
+                    Evaluar
+                </button>
+            </div>
+
+            {loading && <p>Evaluando promoción...</p>}
+            {error && <p className="error">{error}</p>}
+
+            {result && (
+                <div className="promotion-result">
+                    <p>
+                        <strong>Estudiante:</strong> {result.student}
+                    </p>
+                    <p>
+                        <strong>Promedio Final:</strong>{" "}
+                        {result.final_average !== null
+                            ? result.final_average
+                            : "-"}
+                    </p>
+                    <p>
+                        <strong>Evaluación:</strong>{" "}
+                        {result.final_qualitative}
+                    </p>
+
+                    <h3
+                        className={
+                            result.final_average !== null &&
+                                result.final_average >= 60
+                                ? "approved"
+                                : "not-approved"
+                        }
+                    >
+                        {result.final_average !== null &&
+                            result.final_average >= 60
+                            ? "PROMOVIDO"
+                            : "NO PROMOVIDO"}
+                    </h3>
+                </div>
+            )}
         </div>
-      </div>
-    </div>
-  );
+    );
 }

@@ -1,0 +1,107 @@
+﻿/* ===============================
+   Sidebar – HCA Design System
+   =============================== */
+
+.sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background: var(--color-primary);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 16px;
+    font-family: var(--font-family-base);
+}
+
+/* ===============================
+   Header / Branding
+   =============================== */
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.sidebar-logo {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+
+.sidebar-title {
+    display: flex;
+    flex-direction: column;
+}
+
+    .sidebar-title span {
+        font-size: 14px;
+        font-weight: var(--font-weight-extrabold);
+        line-height: 1.2;
+    }
+
+    .sidebar-title small {
+        font-size: 12px;
+        opacity: 0.85;
+    }
+
+/* ===============================
+   Info contextual
+   =============================== */
+
+.sidebar-meta {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+    .sidebar-meta strong {
+        font-weight: var(--font-weight-bold);
+    }
+
+/* ===============================
+   Navegación
+   =============================== */
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: var(--font-weight-semibold);
+    transition: background 0.15s ease;
+}
+
+    .sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* ✅ activo */
+    .sidebar-link.active {
+        background: var(--color-primary-dark);
+    }
+
+/* ===============================
+   Footer
+   =============================== */
+
+.sidebar-footer {
+    margin-top: auto;
+    font-size: 12px;
+    opacity: 0.85;
+    text-align: center;
+}

@@ -1,109 +1,124 @@
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../../services/api";
+import { useEffect, useState } from "react";
+import {
+    getReportCard,
+    downloadReportCardPDF,
+} from "../../services/api";
 import "./GuideQuarterResults.css";
 
-export default function GuideQuarterResults() {
-  // ⚠️ Por ahora fijo (después lo sacamos del maestro guía asignado)
-  const ctx = useMemo(
-    () => ({
-      academicYear: 2025,
-      quarterId: 1,
-      passing: 60,
-    }),
-    []
-  );
+function GuideQuarterResults() {
+    const [report, setReport] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState("");
-  const [rows, setRows] = useState([]);
+    // ✅ En producción real:
+    // Estos valores luego vendrán de selección dinámica
+    const STUDENT_ID = 1;
+    const ACADEMIC_YEAR = 2026;
 
-  useEffect(() => {
-    async function loadQuarterGrades() {
-      setLoading(true);
-      setMsg("");
+    useEffect(() => {
+        async function fetchReportCard() {
+            try {
+                setLoading(true);
+                setError(null);
 
-      try {
-        const res = await api.get("/quarter-grades", {
-          params: {
-            quarter_id: ctx.quarterId,
-            academic_year: ctx.academicYear,
-          },
-        });
+                const data = await getReportCard(
+                    STUDENT_ID,
+                    ACADEMIC_YEAR
+                );
 
-        const data = res.data;
-        setRows(Array.isArray(data) ? data : []);
-
-        if (!Array.isArray(data)) {
-          setMsg("⚠️ El endpoint /quarter-grades devolvió un formato inesperado.");
+                setReport(data);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
         }
-      } catch (e) {
-        console.error(e);
-        setRows([]);
-        setMsg(e?.response?.data?.detail || "❌ No se pudieron cargar las notas del quarter.");
-      } finally {
-        setLoading(false);
-      }
-    }
 
-    loadQuarterGrades();
-  }, [ctx]);
+        fetchReportCard();
+    }, []);
 
-  // Solo reprobadas oficiales
-  const failed = rows
-    .filter((r) => Number(r.final_grade) < ctx.passing)
-    .sort((a, b) => Number(a.final_grade) - Number(b.final_grade));
+    const handleDownloadPDF = async () => {
+        try {
+            await downloadReportCardPDF(
+                STUDENT_ID,
+                ACADEMIC_YEAR
+            );
+        } catch (err) {
+            alert(err.message);
+        }
+    };
 
-  return (
-    <div className="gq-wrap">
-      <div className="gq-head">
-        <h1>Resultados del Quarter</h1>
-        <div className="gq-sub">
-          Año {ctx.academicYear} • Quarter {ctx.quarterId} • Aprobación ≥ {ctx.passing}
+    return (
+        <div className="guide-quarter-results">
+            <h2>Resultados Académicos</h2>
+
+            {loading && <p>Cargando boletín...</p>}
+
+            {error && <p className="error">{error}</p>}
+
+            {!loading && !error && report && (
+                <>
+                    <div className="student-info">
+                        <p>
+                            <strong>Estudiante:</strong> {report.student}
+                        </p>
+                        <p>
+                            <strong>Año Académico:</strong> {report.academic_year}
+                        </p>
+                    </div>
+
+                    <table className="results-table">
+                        <thead>
+                            <tr>
+                                <th>Asignatura</th>
+                                <th>Q1</th>
+                                <th>Q2</th>
+                                <th>Q3</th>
+                                <th>Q4</th>
+                                <th>Final</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {report.report_card.map((item, index) => (
+                                <tr key={index}>
+                                    <td>{item.subject}</td>
+
+                                    {["Q1", "Q2", "Q3", "Q4"].map((q) => {
+                                        const quarter = item.quarters[q];
+                                        return (
+                                            <td key={q}>
+                                                {quarter && quarter.quantitative !== null
+                                                    ? quarter.quantitative
+                                                    : "-"}
+                                                <br />
+                                                <small>
+                                                    {quarter ? quarter.qualitative : ""}
+                                                </small>
+                                            </td>
+                                        );
+                                    })}
+
+                                    <td>
+                                        {item.final_average !== null
+                                            ? item.final_average
+                                            : "-"}
+                                        <br />
+                                        <small>{item.final_qualitative}</small>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div className="actions">
+                        <button onClick={handleDownloadPDF}>
+                            Descargar PDF
+                        </button>
+                    </div>
+                </>
+            )}
         </div>
-      </div>
-
-      {loading ? (
-        <div className="gq-loading">Cargando resultados oficiales…</div>
-      ) : (
-        <>
-          {msg && <div className="gq-msg">{msg}</div>}
-
-          {failed.length === 0 ? (
-            <div className="gq-empty">
-              ✅ No hay materias reprobadas oficiales en este quarter.
-            </div>
-          ) : (
-            <div className="gq-panel">
-              <div className="gq-note">
-                * Estas son notas oficiales del quarter (solo después de cierre del quarter).
-              </div>
-
-              <table className="gq-table">
-                <thead>
-                  <tr>
-                    <th>Student ID</th>
-                    <th>Subject ID</th>
-                    <th>Nota final</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {failed.map((r, idx) => (
-                    <tr key={idx}>
-                      <td className="strong">{r.student_id}</td>
-                      <td>{r.subject_id}</td>
-                      <td className="grade">{Number(r.final_grade).toFixed(2)}</td>
-                      <td>
-                        <span className="badge failed">REPROBADA</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+    );
 }
+
+export default GuideQuarterResults;

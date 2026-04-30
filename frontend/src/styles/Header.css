@@ -1,0 +1,49 @@
+﻿.hca-header {
+    height: auto;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+}
+
+.hca-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hca-header-title {
+    font-size: 15px;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-main);
+}
+
+.hca-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.hca-user-info {
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+}
+
+.hca-user-name {
+    font-size: 13px;
+    font-weight: var(--font-weight-semibold);
+}
+
+.hca-user-role {
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.hca-logout {
+    height: 34px;
+}
+
+``

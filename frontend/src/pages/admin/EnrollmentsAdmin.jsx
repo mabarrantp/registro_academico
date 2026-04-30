@@ -1,102 +1,102 @@
 import { useEffect, useState } from "react";
-import { api } from "../../services/api";
-import "./EnrollmentsAdmin.css";
+import Can from "../../components/Can";
 
 export default function EnrollmentsAdmin() {
-  const [studentCode, setStudentCode] = useState("");
-  const [gradeId, setGradeId] = useState("");
-  const [sectionId, setSectionId] = useState("");
-  const [academicYear] = useState(2025);
+    const [enrollments, setEnrollments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  const [grades, setGrades] = useState([]);
-  const [sections, setSections] = useState([]);
+    const API_URL =
+        import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
-  const [message, setMessage] = useState("");
+    useEffect(() => {
+        async function loadEnrollments() {
+            try {
+                const response = await fetch(`${API_URL}/enrollments`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        "Content-Type": "application/json",
+                    },
+                });
 
-  useEffect(() => {
-    api.get("/grades").then((res) => setGrades(res.data || []));
-    api.get("/sections").then((res) => setSections(res.data || []));
-  }, []);
+                if (!response.ok) {
+                    throw new Error("Error al obtener matrículas");
+                }
 
-  async function createEnrollment() {
-    setMessage("");
+                const data = await response.json();
+                setEnrollments(data);
+            } catch (err) {
+                console.error(err);
+                setError("No se pudo cargar la lista de matrículas");
+            } finally {
+                setLoading(false);
+            }
+        }
 
-    try {
-      await api.post("/enrollments", {
-        student_code: studentCode,
-        grade_id: Number(gradeId),
-        section_id: Number(sectionId),
-        academic_year: academicYear,
-      });
+        loadEnrollments();
+    }, []);
 
-      setMessage("✅ Matrícula registrada correctamente.");
-      setStudentCode("");
-      setGradeId("");
-      setSectionId("");
-    } catch (err) {
-      console.error(err);
-      setMessage(
-        err?.response?.data?.detail || "❌ No se pudo registrar la matrícula."
-      );
+    if (loading) {
+        return <p>Cargando matrículas…</p>;
     }
-  }
 
-  return (
-    <div className="panel">
-      <h2>Matrícula</h2>
+    if (error) {
+        return <p style={{ color: "red" }}>{error}</p>;
+    }
 
-      <div className="grid">
+    return (
         <div>
-          <label>Código del Estudiante</label>
-          <input
-            placeholder="2025-02-0001"
-            value={studentCode}
-            onChange={(e) => setStudentCode(e.target.value)}
-          />
+            <h2>Matrículas</h2>
+
+            {/* Acción futura: crear matrícula */}
+            <Can permission="create">
+                <button
+                    className="btn btn-primary"
+                    style={{ marginBottom: "16px" }}
+                >
+                    Nueva Matrícula
+                </button>
+            </Can>
+
+            {enrollments.length === 0 ? (
+                <p>No hay matrículas registradas.</p>
+            ) : (
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Grado</th>
+                            <th>Sección</th>
+                            <th>Año Académico</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {enrollments.map((enrollment) => (
+                            <tr key={enrollment.id}>
+                                <td>{enrollment.student_name}</td>
+                                <td>{enrollment.grade}</td>
+                                <td>{enrollment.section}</td>
+                                <td>{enrollment.academic_year}</td>
+                                <td>
+                                    <Can permission="edit">
+                                        <button className="btn btn-secondary">
+                                            Editar
+                                        </button>
+                                    </Can>
+
+                                    <Can permission="delete">
+                                        <button className="btn btn-danger">
+                                            Eliminar
+                                        </button>
+                                    </Can>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
         </div>
-
-        <div>
-          <label>Grado</label>
-          <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
-            <option value="">Seleccione</option>
-            {grades.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label>Sección</label>
-          <select
-            value={sectionId}
-            onChange={(e) => setSectionId(e.target.value)}
-          >
-            <option value="">Seleccione</option>
-            {sections
-              .filter((s) => String(s.grade_id) === String(gradeId))
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code}
-                </option>
-              ))}
-          </select>
-        </div>
-
-        <div>
-          <label>Año académico</label>
-          <input type="number" value={academicYear} disabled />
-        </div>
-      </div>
-
-      <div className="actions">
-        <button className="btn btn-primary" onClick={createEnrollment}>
-          Matricular
-        </button>
-      </div>
-
-      {message && <div className="message">{message}</div>}
-    </div>
-  );
+    );
 }

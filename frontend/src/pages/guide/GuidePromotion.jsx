@@ -1,137 +1,81 @@
 ﻿import { useEffect, useMemo, useState } from "react";
-import { api } from "../../services/api";
+import { getFinalAverage } from "../../services/api";
 import "./GuidePromotion.css";
 
 export default function GuidePromotion() {
-  // ?? Por ahora fijo. Luego vendrá del maestro guía asignado.
-  const ctx = useMemo(
-    () => ({
-      academicYear: 2025,
-      gradeId: 8,
-      sectionId: 1,
-    }),
-    []
-  );
+    // ⚠️ Contexto fijo por ahora
+    // Luego se obtiene del guía autenticado
+    const ctx = useMemo(
+        () => ({
+            studentId: 1,
+        }),
+        []
+    );
 
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState("");
-  const [rows, setRows] = useState([]);
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  useEffect(() => {
-    async function loadResults() {
-      setLoading(true);
-      setMsg("");
+    useEffect(() => {
+        async function fetchPromotionStatus() {
+            try {
+                setLoading(true);
+                setError(null);
 
-      try {
-        const res = await api.get("/promotion/results", {
-          params: {
-            academic_year: ctx.academicYear,
-            grade_id: ctx.gradeId,
-            section_id: ctx.sectionId,
-          },
-        });
-
-        const data = res.data;
-        setRows(Array.isArray(data) ? data : []);
-
-        if (!Array.isArray(data)) {
-          setMsg("?? El endpoint /promotion/results devolvió un formato inesperado.");
+                const data = await getFinalAverage(ctx.studentId);
+                setResult(data);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
         }
-      } catch (e) {
-        console.error(e);
-        setRows([]);
-        setMsg(e?.response?.data?.detail || "? No se pudieron cargar resultados de promoción.");
-      } finally {
-        setLoading(false);
-      }
-    }
 
-    loadResults();
-  }, [ctx]);
+        fetchPromotionStatus();
+    }, [ctx]);
 
-  // Conteos para resumen
-  const promoted = rows.filter((r) => String(r.status).toUpperCase() === "PROMOTED").length;
-  const retained = rows.filter((r) => String(r.status).toUpperCase() === "RETAINED").length;
+    return (
+        <div className="guide-promotion">
+            <h2>Estado de Promoción</h2>
 
-  // Orden: Retained primero, luego Promoted; dentro por reprobadas desc
-  const sorted = [...rows].sort((a, b) => {
-    const aKey = String(a.status).toUpperCase() === "RETAINED" ? 0 : 1;
-    const bKey = String(b.status).toUpperCase() === "RETAINED" ? 0 : 1;
-    if (aKey !== bKey) return aKey - bKey;
-    return Number(b.failed_subjects || 0) - Number(a.failed_subjects || 0);
-  });
+            {loading && <p>Evaluando promoción...</p>}
 
-  return (
-    <div className="gp-wrap">
-      <div className="gp-head">
-        <h1>Promoción Final</h1>
-        <div className="gp-sub">
-          Año {ctx.academicYear} • Grado {ctx.gradeId} • Sección {ctx.sectionId}
+            {error && <p className="error">{error}</p>}
+
+            {!loading && !error && result && (
+                <div className="promotion-result">
+                    <p>
+                        <strong>Estudiante:</strong> {result.student}
+                    </p>
+
+                    <p>
+                        <strong>Promedio Final:</strong>{" "}
+                        {result.final_average !== null
+                            ? result.final_average
+                            : "-"}
+                    </p>
+
+                    <p>
+                        <strong>Evaluación:</strong>{" "}
+                        {result.final_qualitative}
+                    </p>
+
+                    <h3
+                        className={
+                            result.final_average !== null &&
+                                result.final_average >= 60
+                                ? "approved"
+                                : "not-approved"
+                        }
+                    >
+                        {result.final_average !== null &&
+                            result.final_average >= 60
+                            ? "PROMOVIDO"
+                            : "NO PROMOVIDO"}
+                    </h3>
+                </div>
+            )}
         </div>
-      </div>
-
-      {loading ? (
-        <div className="gp-loading">Cargando resultados…</div>
-      ) : (
-        <>
-          {msg && <div className="gp-msg">{msg}</div>}
-
-          <div className="gp-cards">
-            <StatCard label="Promovidos" value={promoted} tone="green" />
-            <StatCard label="Retenidos" value={retained} tone="red" />
-            <StatCard label="Total" value={rows.length} tone="blue" />
-          </div>
-
-          {sorted.length === 0 ? (
-            <div className="gp-empty">
-              No hay resultados aún. (¿Ya ejecutaron la promoción final?)
-            </div>
-          ) : (
-            <div className="gp-panel">
-              <div className="gp-note">
-                * Resultado oficial del cierre anual. El Maestro Guía solo visualiza.
-              </div>
-
-              <table className="gp-table">
-                <thead>
-                  <tr>
-                    <th>Estudiante</th>
-                    <th>Reprobadas</th>
-                    <th>Resultado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sorted.map((r, idx) => {
-                    const status = String(r.status).toUpperCase();
-                    return (
-                      <tr key={idx}>
-                        <td className="strong">{r.student_name || r.local_code || r.student_id}</td>
-                        <td className="grade">{Number(r.failed_subjects || 0)}</td>
-                        <td>
-                          {status === "PROMOTED" ? (
-                            <span className="badge promoted">PROMOVIDO</span>
-                          ) : (
-                            <span className="badge retained">RETENIDO</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+    );
 }
-
-function StatCard({ label, value, tone }) {
-  return (
-    <div className={`gp-card ${tone || ""}`}>
-      <div className="gp-card-value">{value}</div>
-      <div className="gp-card-label">{label}</div>
-    </div>
-  );
-}
+``

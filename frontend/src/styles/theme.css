@@ -1,0 +1,36 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+    /* ===============================
+     🎨 COLORES HCA
+     =============================== */
+    --color-primary: #2d6eb4;
+    --color-primary-dark: #1f4f8a;
+    --color-primary-light: #eaf2fb;
+    --color-bg: #f4f6f9;
+    --color-surface: #ffffff;
+    --color-text-main: #0b1220;
+    --color-text-muted: #5b6b80;
+    --color-border: #d1d9e6;
+    /* ===============================
+     ✍️ TIPOGRAFÍA
+     =============================== */
+    --font-family-base: "Inter", system-ui, -apple-system, sans-serif;
+    --font-size-sm: 13px;
+    --font-size-md: 14px;
+    --font-size-lg: 18px;
+    --font-size-xl: 22px;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    /* ===============================
+     📐 BORDES / SOMBRAS
+     =============================== */
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.1);
+}
